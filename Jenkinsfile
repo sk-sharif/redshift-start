@@ -46,11 +46,4 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            // Clean up the response.json file
-            deleteFile('response.json')
-        }
-    }
 }

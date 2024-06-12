@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Trigger Lambda') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials-id']]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'ef0e2e45-3545-44a2-b37d-84928a123942']]) {
                     sh '''
                     aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
                     aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY

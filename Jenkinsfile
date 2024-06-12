@@ -27,9 +27,14 @@ pipeline {
         stage('Check Lambda Response') {
             steps {
                 script {
-                    // Read the entire JSON response
-                    def response = readFile('response.json')
+                    // Check if the response.json file exists
+                    def responseFile = new File('response.json')
+                    if (!responseFile.exists()) {
+                        error "Response file 'response.json' not found."
+                    }
+                    
                     // Parse the response using Groovy's JSON parser
+                    def response = readFile('response.json')
                     def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
                     
                     if (jsonResponse.StatusCode != 200) {
@@ -44,8 +49,8 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            // Clean up the response.json file
+            deleteFile('response.json')
         }
     }
 }
-

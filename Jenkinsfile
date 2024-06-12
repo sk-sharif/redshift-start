@@ -27,11 +27,15 @@ pipeline {
         stage('Check Lambda Response') {
             steps {
                 script {
-                    def response = readJSON file: 'response.json'
-                    if (response.StatusCode != 200) {
-                        error "Lambda function failed with response: ${response}"
+                    // Read the entire JSON response
+                    def response = readFile('response.json')
+                    // Parse the response using Groovy's JSON parser
+                    def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
+                    
+                    if (jsonResponse.StatusCode != 200) {
+                        error "Lambda function failed with response status code: ${jsonResponse.StatusCode}"
                     } else {
-                        echo "Lambda function succeeded: ${response}"
+                        echo "Lambda function succeeded: ${jsonResponse.body}"
                     }
                 }
             }

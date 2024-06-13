@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         AWS_REGION = 'eu-central-1'
-        LAMBDA_FUNCTION_NAME = 'Redshift_Cluster_Start_Function'
+        LAMBDA_FUNCTION_NAME = 'Redshift_Cluster_Stop_Function'
     }
 
     stages {

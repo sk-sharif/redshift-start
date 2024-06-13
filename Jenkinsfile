@@ -22,9 +22,8 @@ pipeline {
         stage('Check Lambda Response') {
             steps {
                 script {
-                    // Check if the response.json file exists
-                    def responseFile = new File('response.json')
-                    if (!responseFile.exists()) {
+                    // Check if the response.json file exists using Jenkins-approved method
+                    if (!fileExists('response.json')) {
                         error "Response file 'response.json' not found."
                     }
                     

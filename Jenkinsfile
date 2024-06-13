@@ -10,16 +10,25 @@ pipeline {
         stage('Trigger Lambda') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'ef0e2e45-3545-44a2-b37d-84928a123942']]) {
-                    sh '''
-                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                    aws configure set region $AWS_REGION
-                    
-                    aws lambda invoke \
-                        --function-name ${LAMBDA_FUNCTION_NAME} \
-                        --payload '{}' \
-                        response.json
-                    '''
+                    script {
+                        // Invoke the Lambda function and capture the output
+                        def invokeResult = sh(script: '''
+                            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                            aws configure set region $AWS_REGION
+
+                            aws lambda invoke \
+                                --function-name ${LAMBDA_FUNCTION_NAME} \
+                                --payload '{}' \
+                                response.json \
+                                --query 'StatusCode' --output text
+                        ''', returnStdout: true).trim()
+
+                        // Check the HTTP status code returned by the aws lambda invoke command
+                        if (invokeResult != "200") {
+                            error "Lambda function failed with HTTP status code: ${invokeResult}"
+                        }
+                    }
                 }
             }
         }
@@ -36,13 +45,15 @@ pipeline {
                     def response = readFile('response.json')
                     def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
                     
-                    if (jsonResponse.StatusCode != 200) {
-                        error "Lambda function failed with response status code: ${jsonResponse.StatusCode}"
-                    } else {
-                        echo "Lambda function succeeded: ${jsonResponse.body}"
-                    }
+                    echo "Lambda function succeeded: ${jsonResponse}"
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 }

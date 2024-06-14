@@ -7,46 +7,28 @@ pipeline {
     }
 
     stages {
-        stage('Trigger Lambda') {
+        stage('Run Gitleaks') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'ef0e2e45-3545-44a2-b37d-84928a123942']]) {
-                    script {
-                        // Invoke the Lambda function and capture the output
-                        def invokeResult = sh(script: '''
-                            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                            aws configure set region $AWS_REGION
+                // Run Gitleaks
+                script {
+                    def gitleaksCmd = 'gitleaks detect --source . --report-format json --report-path gitleaks-report.json'
+                    def gitleaksStatus = sh(script: gitleaksCmd, returnStatus: true)
 
-                            aws lambda invoke \
-                                --function-name ${LAMBDA_FUNCTION_NAME} \
-                                --payload '{}' \
-                                response.json \
-                                --query 'StatusCode' --output text
-                        ''', returnStdout: true).trim()
-
-                        // Check the HTTP status code returned by the aws lambda invoke command
-                        if (invokeResult != "200") {
-                            error "Lambda function failed with HTTP status code: ${invokeResult}"
-                        }
+                    if (gitleaksStatus != 0) {
+                        // If Gitleaks detects secrets, mark the build as unstable
+                        currentBuild.result = 'UNSTABLE'
+                        echo "Gitleaks found potential secrets. Check the report at gitleaks-report.json"
+                    } else {
+                        echo "No secrets detected by Gitleaks."
                     }
                 }
             }
         }
 
-        stage('Check Lambda Response') {
+        stage('Build') {
             steps {
-                script {
-                    // Check if the response.json file exists using Jenkins-approved method
-                    if (!fileExists('response.json')) {
-                        error "Response file 'response.json' not found."
-                    }
-                    
-                    // Parse the response using Groovy's JSON parser
-                    def response = readFile('response.json')
-                    def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-                    
-                    echo "Lambda function succeeded: ${jsonResponse}"
-                }
+                // Your build steps here
+                echo 'Building...'
             }
         }
     }
